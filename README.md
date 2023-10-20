@@ -22,4 +22,4 @@ which will run the Swift tests as well as the transpiled
 Kotlin JUnit tests in the Robolectric Android simulation environment.
 
 Parity testing can be performed with `skip test`,
-which will outpout a table of the test results for both platforms.
+which will output a table of the test results for both platforms.
