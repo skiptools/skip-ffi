@@ -1,0 +1,9 @@
+# Configuration file for https://skip.tools project
+#
+# Kotlin dependencies and Gradle build options for this module can be configured here
+build:
+  contents:
+    - block: 'dependencies'
+      contents:
+        - 'implementation("net.java.dev.jna:jna:5.13.0@aar")'
+        - 'testImplementation("net.java.dev.jna:jna:5.13.0")'
