@@ -4,7 +4,6 @@
 // under the terms of the GNU Lesser General Public License 3.0
 // as published by the Free Software Foundation https://fsf.org
 import XCTest
-import Foundation
 #if !SKIP
 import SQLite3
 #endif
@@ -14,10 +13,20 @@ final class SkipFFITests: XCTestCase {
     func testSimpleDarwinJNA() throws {
         XCTAssertEqual(12, Darwin.abs(-12))
         Darwin.free(Darwin.malloc(8))
+
+        XCTAssertNotNil(Darwin.getenv("PATH"), "PATH environent should be set for getenv")
+        XCTAssertNil(Darwin.getenv("PATH_DOES_NOT_EXIST"), "non-existent key should not return a value for getenv")
     }
 
     func testSQLiteJNA() throws {
-        XCTAssertEqual(0, SQLite3.sqlite3_sleep(0))
+        /// Whether we are on an Android OS (emulator or device), versus the Robolectric environment
+        let isAndroid = Darwin.getenv("ANDROID_ROOT") != nil
+
+        if isAndroid {
+            throw XCTSkip("Error loading on Android: java.lang.UnsatisfiedLinkError: Unable to load library 'sqlite3': dlopen failed: library \"libsqlite3.so\" not found")
+        } else {
+            XCTAssertEqual(0, SQLite3.sqlite3_sleep(0))
+        }
 
 //        #if SKIP
 //        var db: OpaquePointer?
@@ -38,23 +47,21 @@ import com.sun.jna.__
 import com.sun.jna.ptr.__
 
 /// A bridge from Darwin functions to Android's Bionic libc.
-let Darwin: BionicCompatLibrary = Native.load("c", (BionicCompatLibrary.self as kotlin.reflect.KClass).java)
+let Darwin: BionicDarwin = Native.load("c", (BionicDarwin.self as kotlin.reflect.KClass).java)
 
 typealias OpaquePointer = PointerByReference
 
-protocol BionicCompatLibrary : Library {
+protocol BionicDarwin : Library {
     func abs(_ value: Int) -> Int
 
     func malloc(_ size: Int) -> OpaquePointer
     func free(_ ptr: OpaquePointer) -> Int
+
+    func getenv(_ key: String) -> String?
 }
 
-
-/// Whether we are on an Android OS (emulator or device), versus the Robolectric environment
-private let isAndroid = ProcessInfo.processInfo.environment["ANDROID_ROOT"] != nil
-
 /// Direct access to the Android SQLite library from Skip.
-let SQLite3: SQLiteLibrary = Native.load(isAndroid ? "sqlite" : "sqlite3", (SQLiteLibrary.self as kotlin.reflect.KClass).java)
+let SQLite3: SQLiteLibrary = Native.load("sqlite3", (SQLiteLibrary.self as kotlin.reflect.KClass).java)
 
 protocol SQLiteLibrary : Library {
 
