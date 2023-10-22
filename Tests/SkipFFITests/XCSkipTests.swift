@@ -10,7 +10,9 @@ import SkipTest
 @available(macOS 13, *)
 final class XCSkipTests: XCTestCase, XCGradleHarness {
     public func testSkipModule() async throws {
-        try await runGradleTests(device: .none) // set device ID to run in Android emulator vs. robolectric
+        // set device ID to run in Android emulator vs. robolectric
+        //try await runGradleTests(device: "emulator-5554")
+        try await runGradleTests(device: .none)
     }
 }
 #endif
