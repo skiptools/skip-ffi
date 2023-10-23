@@ -93,6 +93,14 @@ final class SkipFFITests: XCTestCase {
         let s3 = SQLite3.sqlite3_close(db)
         XCTAssertEqual(21, s3, "double-close should return an invalid handle error status")
     }
+
+    func testZLibJNA() throws {
+        throw XCTSkip("TODO: zlib")
+    }
+
+    func testLibXMLJNA() throws {
+        throw XCTSkip("TODO: libxml2")
+    }
 }
 
 #if SKIP
