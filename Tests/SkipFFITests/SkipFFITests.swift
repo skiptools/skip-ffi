@@ -24,7 +24,7 @@ final class SkipFFITests: XCTestCase {
         XCTAssertEqual(12, Darwin.abs(-12))
         Darwin.free(Darwin.malloc(8))
 
-        XCTAssertNotNil(Darwin.getenv("PATH"), "PATH environent should be set for getenv")
+        XCTAssertNotNil(Darwin.getenv("PATH"), "PATH environment should be set for getenv")
         XCTAssertNil(Darwin.getenv("PATH_DOES_NOT_EXIST"), "non-existent key should not return a value for getenv")
     }
 

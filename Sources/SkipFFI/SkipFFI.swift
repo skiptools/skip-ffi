@@ -7,9 +7,10 @@
 #if SKIP
 /// A  JNA `com.sun.jna.Pointer` is the equivalent of a Swift `OpaquePointer`
 public typealias OpaquePointer = com.sun.jna.Pointer
+public typealias UnsafeMutableRawPointer = com.sun.jna.ptr.PointerByReference
 
-public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (com.sun.jna.ptr.PointerByReference?) throws -> T) rethrows -> T {
-    let pref = com.sun.jna.ptr.PointerByReference()
+public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (UnsafeMutableRawPointer) throws -> T) rethrows -> T {
+    let pref = UnsafeMutableRawPointer()
     defer {
         // transfer the pointer result to the InOut
         pointerRef.value = pref.value
