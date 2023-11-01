@@ -17,4 +17,10 @@ public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, bl
     }
     return try block(pref)
 }
+
+/// `Swift.String.init(cString:)` can be replicated using `com.sun.jna.Pointer.getString(offset)`
+public func String(cString: OpaquePointer) -> String {
+    cString.getString(0)
+}
+
 #endif

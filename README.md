@@ -11,6 +11,51 @@ and implements `Swift.withUnsafeMutablePointer` using a `com.sun.jna.ptr.Pointer
 This capability is used by Skip frameworks like [SkipScript](https://source.skip.tools/skip-script) to 
 provide a unified API to underlying native C APIs on both Darwin and Android.
 
+## Example
+
+```swift
+#if !SKIP
+import Darwin
+#else
+import SkipFFI
+let Darwin = BionicDarwin()
+#endif
+
+// Full-qualified Module.fname() will call through SkipFFI to the C interface
+Darwin.abs(-12) // 12
+Darwin.free(Darwin.malloc(8))
+
+
+// MARK: Implementation of C interface
+
+func BionicDarwin() -> BionicDarwin {
+    com.sun.jna.Native.load("c", (BionicDarwin.self as kotlin.reflect.KClass).java)
+}
+
+protocol BionicDarwin : com.sun.jna.Library {
+    func abs(_ value: Int32) -> Int32
+
+    func malloc(_ size: Int32) -> OpaquePointer
+    func free(_ ptr: OpaquePointer) -> Int32
+
+    func getenv(_ key: String) -> String?
+}
+
+```
+
+
+## Implementation
+
+SkipFFI's implementation provides:
+
+```swift
+public typealias OpaquePointer = com.sun.jna.Pointer
+public typealias UnsafeMutableRawPointer = com.sun.jna.ptr.PointerByReference
+
+public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (UnsafeMutableRawPointer) throws -> T) rethrows -> T
+```
+
+
 ## Building
 
 This project is a Swift Package Manager module that uses the
