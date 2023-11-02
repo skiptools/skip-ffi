@@ -55,6 +55,28 @@ public typealias UnsafeMutableRawPointer = com.sun.jna.ptr.PointerByReference
 public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (UnsafeMutableRawPointer) throws -> T) rethrows -> T
 ```
 
+## Working with Data
+
+SkipFFI doesn't work with the Data API directly.
+If you need to access raw bytes, you can use the APIs directly:
+
+```swift
+
+let blob = Data(…)
+let size = blob.count
+
+#if SKIP
+let buf = java.nio.ByteBuffer.allocateDirect(size)
+buf.put(blob.kotlin(nocopy: true)) // transfer the bytes
+let ptr = com.sun.jna.Native.getDirectBufferPointer(buf)
+try check(code: SQLite3.sqlite3_bind_blob(stmnt, index, ptr, size, nil))
+#else
+try blob.withUnsafeBytes { ptr in
+    try check(code: SQLite3.sqlite3_bind_blob(stmnt, index, ptr.baseAddress, size, nil))
+}
+#endif
+```
+
 
 ## Building
 
