@@ -47,6 +47,11 @@ final class SkipFFITests: XCTestCase {
         XCTAssertNil(Darwin.getenv("PATH_DOES_NOT_EXIST"), "non-existent key should not return a value for getenv")
     }
 
+    func testDarwinDirectMappingJNA() throws {
+        let dd = DarwinDirect()
+        XCTAssertEqual(12, dd.abs(-12))
+    }
+
     func testSQLiteJNA() throws {
         #if SKIP
         // You may set the system property jna.debug_load=true to make JNA print the steps of its library search to the console.
@@ -117,6 +122,23 @@ final class SkipFFITests: XCTestCase {
     }
 }
 
+
+final class DarwinDirect {
+    init() {
+        #if SKIP
+        // Android JNA error: "java.lang.IllegalStateException: The SecurityManager implementation on this platform is broken; you must explicitly provide the class to register"
+        // com.sun.jna.Native.register("c")
+        com.sun.jna.Native.register((DarwinDirect.self as kotlin.reflect.KClass).java, "c")
+        #endif
+    }
+
+    // @JvmName is needed for test cases, since otherwise it is mangled to 'abs$SkipFFI_debugUnitTest'
+    // SKIP INSERT: @JvmName("abs")
+    // SKIP EXTERN
+    func abs(_ value: Int32) -> Int32 { Darwin.abs(value) }
+}
+
+
 #if SKIP
 
 // MARK: BionicDarwin
@@ -133,6 +155,7 @@ private protocol BionicDarwin : com.sun.jna.Library {
 
     func getenv(_ key: String) -> String?
 }
+
 
 
 // MARK: LibXMLLibrary

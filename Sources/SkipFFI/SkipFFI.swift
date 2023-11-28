@@ -23,4 +23,5 @@ public func String(cString: OpaquePointer) -> String {
     cString.getString(0)
 }
 
+
 #endif

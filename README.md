@@ -8,7 +8,7 @@ On the Kotlin side, SkipFFI uses the Java Native Access ([JNA](https://github.co
 library to simulate Swift types like `Swift.OpaquePointer` as `com.sun.jna.Pointer` pointer references, 
 and implements `Swift.withUnsafeMutablePointer` using a `com.sun.jna.ptr.PointerByReference` on the Java side.
 
-This capability is used by Skip frameworks like [SkipScript](https://source.skip.tools/skip-script) to 
+This capability is used by Skip frameworks like [SkipSQL](https://source.skip.tools/skip-sql) and [SkipScript](https://source.skip.tools/skip-script) to 
 provide a unified API to underlying native C APIs on both Darwin and Android.
 
 ## Example
