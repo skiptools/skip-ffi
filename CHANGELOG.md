@@ -1,3 +1,17 @@
+## 0.2.2
+
+Released 2023-12-11
+
+  - Add pointer typealiases
+  - Add UnsafeMutablePointer
+
+## 0.2.2
+
+Released 2023-12-11
+
+  - Add pointer typealiases
+  - Add UnsafeMutablePointer
+
 ## 0.2.1
 
 Released 2023-11-27

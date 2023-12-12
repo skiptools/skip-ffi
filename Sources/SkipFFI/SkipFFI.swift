@@ -5,6 +5,14 @@
 // as published by the Free Software Foundation https://fsf.org
 
 #if SKIP
+public typealias SkipFFIStructure = com.sun.jna.Structure
+#else
+/// A protocol for a type that implements a C struct
+public protocol SkipFFIStructure {
+}
+#endif
+
+#if SKIP
 /// A  JNA `com.sun.jna.Pointer` is the equivalent of a Swift `OpaquePointer`
 public typealias OpaquePointer = com.sun.jna.Pointer
 public typealias UnsafeMutableRawPointer = com.sun.jna.ptr.PointerByReference
@@ -17,9 +25,6 @@ public typealias UnsafeMutableRawBufferPointer = UnsafeMutableRawPointer
 public typealias UnsafeRawBufferPointer = UnsafeMutableRawPointer
 public typealias UnsafeRawPointer = UnsafeMutableRawPointer
 
-public typealias SkipFFIStructure = com.sun.jna.Structure
-
-
 public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (UnsafeMutableRawPointer) throws -> T) rethrows -> T {
     let pref = UnsafeMutableRawPointer()
     defer {
@@ -28,6 +33,12 @@ public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, bl
     }
     return try block(pref)
 }
+
+// Kotlin compile error: Platform declaration clash: The following declarations have the same JVM signature (withUnsafeMutablePointer(Lskip/lib/InOut;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;):
+//public func withUnsafeMutablePointer<T>(to pointerRef: InOut<SkipFFIStructure>, block: (InOut<SkipFFIStructure>) throws -> T) rethrows -> T {
+//    block(pointerRef)
+//}
+
 
 /// `Swift.String.init(cString:)` can be replicated using `com.sun.jna.Pointer.getString(offset)`
 public func String(cString: OpaquePointer) -> String {
