@@ -1,3 +1,9 @@
+## 0.2.4
+
+Released 2023-12-31
+
+  - Add SkipFFI.registerNatives function to help registering a JNA direct mapping
+
 ## 0.2.3
 
 Released 2023-12-30
