@@ -4,6 +4,8 @@
 // under the terms of the GNU Lesser General Public License 3.0
 // as published by the Free Software Foundation https://fsf.org
 
+import Foundation
+
 #if SKIP
 public typealias SkipFFIStructure = com.sun.jna.Structure
 #else
@@ -15,15 +17,16 @@ public protocol SkipFFIStructure {
 #if SKIP
 /// A  JNA `com.sun.jna.Pointer` is the equivalent of a Swift `OpaquePointer`
 public typealias OpaquePointer = com.sun.jna.Pointer
+public typealias UnsafePointer<Pointee> = OpaquePointer
+public typealias UnsafeRawPointer = OpaquePointer
+
 public typealias UnsafeMutableRawPointer = com.sun.jna.ptr.PointerByReference
 
 public typealias UnsafeMutablePointer<Element> = UnsafeMutableRawPointer
 public typealias UnsafeMutableBufferPointer<Element> = UnsafeMutableRawPointer
 public typealias UnsafeBufferPointer<Element> = UnsafeMutableRawPointer
-public typealias UnsafePointer<Pointee> = UnsafeMutableRawPointer
 public typealias UnsafeMutableRawBufferPointer = UnsafeMutableRawPointer
 public typealias UnsafeRawBufferPointer = UnsafeMutableRawPointer
-public typealias UnsafeRawPointer = UnsafeMutableRawPointer
 
 public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (UnsafeMutableRawPointer) throws -> T) rethrows -> T {
     let pref = UnsafeMutableRawPointer()
@@ -43,6 +46,10 @@ public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, bl
 /// `Swift.String.init(cString:)` can be replicated using `com.sun.jna.Pointer.getString(offset)`
 public func String(cString: OpaquePointer) -> String {
     cString.getString(0)
+}
+
+public func Data(bytes: UnsafeRawPointer, count: Int) -> Data {
+    return Data(platformValue: bytes.getByteArray(0, count))
 }
 
 //public func withUnsafeMutableBytes<T, Result>(of value: inout T, _ body: (Any /* UnsafeMutableRawBufferPointer */) throws -> Result) rethrows -> Result { fatalError() }
