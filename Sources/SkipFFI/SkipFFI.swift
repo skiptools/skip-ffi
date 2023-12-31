@@ -58,6 +58,36 @@ public func Data(bytes: UnsafeRawPointer, count: Int) -> Data {
 //public func withUnsafeTemporaryAllocation<R>(byteCount: Int, alignment: Int, _ body: (Any /* UnsafeMutableRawBufferPointer */) throws -> R) rethrows -> R { fatalError() }
 //public func withUnsafeTemporaryAllocation<R>(of type: Any /* T.Type */, capacity: Int, _ body: (Any /* UnsafeMutableBufferPointer<T> */) throws -> R) rethrows -> R { fatalError() }
 
-
-
 #endif
+
+/// Registers the class for the given instances to act as the JNA native proxy
+public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, libraryName: String) -> T {
+
+    #if SKIP
+    let clazz = type(of: instance)
+
+    do {
+        // should be bundled from the C module in jni/arm64-v8a/libclibrary.so
+        com.sun.jna.Native.register(clazz.java, libraryName)
+    } catch let error as java.lang.UnsatisfiedLinkError {
+        // for Robolectric we link against out locally-built library version created by either Xcode or SwiftPM
+        var frameworkPath: String
+        if let bundlePath = ProcessInfo.processInfo.environment["XCTestBundlePath"] { // running from Xcode
+            frameworkPath = bundlePath + "/../PackageFrameworks/\(frameworkName).framework/\(frameworkName)"
+        } else { // SwiftPM doesn't set XCTestBundlePath and builds as a .dylib rather than a .framework
+            let baseDir = FileManager.default.currentDirectoryPath + "/../../../../../.."
+            frameworkPath = baseDir + "/x86_64-apple-macosx/debug/lib\(frameworkName).dylib" // check for Intel
+            if !FileManager.default.fileExists(atPath: frameworkPath) { // no x86_64 … try ARM
+                frameworkPath = baseDir + "/arm64-apple-macosx/debug/lib\(frameworkName).dylib"
+            }
+        }
+
+        if !FileManager.default.fileExists(atPath: frameworkPath) {
+            error.printStackTrace()
+            print("SkipFFI.registerNatives: could not locate library \(libraryName) for framework \(frameworkName) at expected path: \(frameworkPath)")
+        }
+        com.sun.jna.Native.register(clazz.java, frameworkPath)
+    }
+    #endif
+    return instance
+}
