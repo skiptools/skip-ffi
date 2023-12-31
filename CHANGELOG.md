@@ -1,3 +1,9 @@
+## 0.2.3
+
+Released 2023-12-30
+
+  - Add Data(UnsafeRawPointer) initializer
+
 ## 0.2.2
 
 Released 2023-12-11
