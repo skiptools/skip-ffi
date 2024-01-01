@@ -8,7 +8,9 @@ On the Kotlin side, SkipFFI uses the Java Native Access ([JNA](https://github.co
 library to simulate Swift types like `Swift.OpaquePointer` as `com.sun.jna.Pointer` pointer references, 
 and implements `Swift.withUnsafeMutablePointer` using a `com.sun.jna.ptr.PointerByReference` on the Java side.
 
-This capability is used by Skip frameworks like [SkipSQL](https://source.skip.tools/skip-sql) and [SkipScript](https://source.skip.tools/skip-script) to 
+This capability is used by Skip frameworks like
+[SkipSQL](https://source.skip.tools/skip-sql) and
+[SkipScript](https://source.skip.tools/skip-script) to
 provide a unified API to underlying native C APIs on both Darwin and Android.
 
 ## Example
@@ -57,7 +59,8 @@ public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, bl
 
 ## Working with Data
 
-SkipFFI doesn't work with the Data API directly.
+SkipFFI doesn't work with the Foundation Data API directly.
+
 If you need to access raw bytes, you can use the APIs directly:
 
 ```swift
@@ -76,6 +79,17 @@ try blob.withUnsafeBytes { ptr in
 }
 #endif
 ```
+
+## Embedded C Code
+
+SkipFFI can be used to provide a direct interface from your transpiled Kotlin to
+an embedded C library. It configures gradle's support for cmake build files and the
+Android NDK toolchain to build the embedded C library for each of Android's supported
+architectures, much in the same was as Xcode and SwiftPM handle building and linking
+C source.
+
+See the [Skip C Demo](http://source.skip.tools/skip-c-demo) sample project for an
+example of using C files to provide a unified API to both Swift and Kotlin.
 
 
 ## Building
