@@ -82,14 +82,34 @@ try blob.withUnsafeBytes { ptr in
 
 ## Embedded C Code
 
+With SkipFFI you can embed C code in your dual-platform Skip framework,
+and use SkipFFI to create an idiomatic wrapper around the code that can
+be used both from Swift and the transpiled Kotlin.
+
 SkipFFI can be used to provide a direct interface from your transpiled Kotlin to
 an embedded C library. It configures gradle's support for cmake build files and the
 Android NDK toolchain to build the embedded C library for each of Android's supported
-architectures, much in the same was as Xcode and SwiftPM handle building and linking
-C source.
+architectures, much in the same way as Xcode and SwiftPM handle building and linking
+C source with Swift code for various architectures.
 
 See the [Skip C Demo](http://source.skip.tools/skip-c-demo) sample project for an
 example of using C files to provide a unified API to both Swift and Kotlin.
+
+
+## Local vs. Instrumeted Testing
+
+When you build and test the `skip-c-demo` project out of the box, either from Xcode or the Terminal using `swift test`, the normal Skip testing process will occur: the Swift test cases will be compiled an run against the macOS architecture, and then the special `XCSkipTests` will cause the `SkipUnit` framework to invoke `gradle test` against the transpiled source and test case files. And while this does work transparently with any embedded C files, you should be aware that since local testing run on the local macOS JVM, it isn't actually exercising the cross-compiled Android native libraries. It is, rather, linking to the locally-built C library that was built by SwiftPM.
+
+This is the fastest way to test the native SkipFFI bridging, but when your C code needs to interface with libraries that are only available on Android (such as the various NDK APIs: [https://developer.android.com/ndk/guides/stable_apis](https://developer.android.com/ndk/guides/stable_apis)), then you will need to test non-locally, against an actual Android emulator or device.
+
+In order to test the cross-compiled shared libraries on a real Android system, you need to run the instrumented tests against an Android simulator or device. This is accomplished by launching a simulator from the Android Studio Device Manager and then obtaining the device identifier with the `adb devices` terminal command. If you have a device with the id "emulator-5554", you can then run the transpiled tests against the simulator with the command:
+
+```plaintext
+ANDROID_SERIAL=emulator-5554 swift test
+```
+
+Similarly, you can set the `ANDROID_SERIAL` environment variable in the Run Arguments screen of the Xcode scheme for the target you are testing, which will have the same effect of running the instrumented tests against the specified emulator or device.
+
 
 
 ## Building
