@@ -30,11 +30,6 @@ private lazy let libxml2 = LibXMLLibrary()
 
 @available(macOS 13, *)
 final class SkipFFITests: XCTestCase {
-    /// Whether we are on an Android OS (emulator or device), versus the Robolectric environment
-    var isAndroid: Bool {
-        Darwin.getenv("ANDROID_ROOT") != nil
-    }
-
     func testSimpleDarwinJNA() throws {
         // You may set the system property jna.debug_load=true to make JNA print the steps of its library search to the console.
         // https://java-native-access.github.io/jna/4.2.1/com/sun/jna/NativeLibrary.html#library_search_paths
@@ -45,6 +40,13 @@ final class SkipFFITests: XCTestCase {
 
         XCTAssertNotNil(Darwin.getenv("PATH"), "PATH environment should be set for getenv")
         XCTAssertNil(Darwin.getenv("PATH_DOES_NOT_EXIST"), "non-existent key should not return a value for getenv")
+    }
+
+    func testJNAPlatform() throws {
+        #if SKIP
+        XCTAssertEqual(isAndroid, com.sun.jna.Platform.isAndroid())
+        XCTAssertEqual(isMacOS, com.sun.jna.Platform.isMac())
+        #endif
     }
 
     func testDarwinDirectMappingJNA() throws {
