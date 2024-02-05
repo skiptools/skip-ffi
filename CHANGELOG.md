@@ -1,3 +1,12 @@
+## 0.3.0
+
+Released 2024-02-05
+
+  - Update platform check test case
+  - Update platform checks
+  - Add mention about local and instrumented testing to README
+  - Update docs to point to the skip-c-demo sample
+
 ## 0.2.4
 
 Released 2023-12-31

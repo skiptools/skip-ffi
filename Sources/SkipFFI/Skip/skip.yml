@@ -1,9 +1,26 @@
 # Configuration file for https://skip.tools project
 #
 # Kotlin dependencies and Gradle build options for this module can be configured here
+
+# the blocks to add to the settings.gradle.kts
+settings:
+  contents:
+    - block: 'dependencyResolutionManagement'
+      contents:
+        - block: 'versionCatalogs'
+          contents:
+            - block: 'create("libs")'
+              contents:
+                - 'version("jna", "5.14.0")'
+                - 'library("jna", "net.java.dev.jna", "jna").versionRef("jna")'
+
+# the blocks to add to the build.gradle.kts
 build:
   contents:
     - block: 'dependencies'
+      export: false
       contents:
-        - 'implementation("net.java.dev.jna:jna:5.13.0@aar")'
-        - 'testImplementation("net.java.dev.jna:jna:5.13.0")'
+        - 'api(libs.jna) { artifact { type = "aar" } }'
+    - block: 'dependencies'
+      contents:
+        - 'testImplementation(libs.jna)'
