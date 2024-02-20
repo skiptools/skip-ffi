@@ -4,6 +4,8 @@
 // under the terms of the GNU Lesser General Public License 3.0
 // as published by the Free Software Foundation https://fsf.org
 import XCTest
+import Foundation
+
 #if !SKIP
 import SQLite3
 #else
@@ -47,6 +49,14 @@ final class SkipFFITests: XCTestCase {
         XCTAssertEqual(isAndroid, com.sun.jna.Platform.isAndroid())
         //XCTAssertEqual(isMacOS, com.sun.jna.Platform.isMac())
         #endif
+    }
+
+    func testDataWithUnsafeBytes() throws {
+        let data = "ABC".data(using: String.Encoding.utf8)!
+        let baseAddress = data.withUnsafeBytes {
+            $0.baseAddress
+        }
+        XCTAssertNotNil(baseAddress)
     }
 
     func testDarwinDirectMappingJNA() throws {

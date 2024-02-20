@@ -28,6 +28,12 @@ public typealias UnsafeBufferPointer<Element> = UnsafeMutableRawPointer
 public typealias UnsafeMutableRawBufferPointer = UnsafeMutableRawPointer
 public typealias UnsafeRawBufferPointer = UnsafeMutableRawPointer
 
+public extension UnsafeMutableRawPointer {
+    var baseAddress: OpaquePointer {
+        return getValue()
+    }
+}
+
 public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, block: (UnsafeMutableRawPointer) throws -> T) rethrows -> T {
     let pref = UnsafeMutableRawPointer()
     defer {
@@ -58,7 +64,18 @@ public func Data(bytes: UnsafeRawPointer, count: Int) -> Data {
 //public func withUnsafeTemporaryAllocation<R>(byteCount: Int, alignment: Int, _ body: (Any /* UnsafeMutableRawBufferPointer */) throws -> R) rethrows -> R { fatalError() }
 //public func withUnsafeTemporaryAllocation<R>(of type: Any /* T.Type */, capacity: Int, _ body: (Any /* UnsafeMutableBufferPointer<T> */) throws -> R) rethrows -> R { fatalError() }
 
+
+extension Data {
+    public func withUnsafeBytes<ResultType>(_ body: (UnsafeRawBufferPointer) throws -> ResultType) rethrows -> ResultType {
+        let buf = java.nio.ByteBuffer.allocateDirect(self.count)
+        buf.put(self.kotlin(nocopy: true))
+        let ptr = com.sun.jna.Native.getDirectBufferPointer(buf)
+        return body(com.sun.jna.ptr.PointerByReference(ptr))
+    }
+}
+
 #endif
+
 
 /// Registers the class for the given instances to act as the JNA native proxy
 public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, libraryName: String) -> T {
