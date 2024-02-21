@@ -14,9 +14,27 @@ public protocol SkipFFIStructure {
 }
 #endif
 
+// MARK: UInt handling
+
+#if !SKIP
+public typealias FFIUInt = UInt
+public typealias FFIUInt8 = UInt8
+public typealias FFIUInt16 = UInt16
+public typealias FFIUInt32 = UInt32
+public typealias FFIUInt64 = UInt64
+#else
+public typealias FFIUInt = Int64 // Java has no native UInt
+public typealias FFIUInt8 = Int8 // Java has no native UInt
+public typealias FFIUInt16 = Int16 // Java has no native UInt
+public typealias FFIUInt32 = Int32 // Java has no native UInt
+public typealias FFIUInt64 = Int64 // Java has no native UInt
+#endif
+
+
 #if SKIP
 /// A  JNA `com.sun.jna.Pointer` is the equivalent of a Swift `OpaquePointer`
 public typealias OpaquePointer = com.sun.jna.Pointer
+public typealias Memory = com.sun.jna.Memory
 public typealias UnsafePointer<Pointee> = OpaquePointer
 public typealias UnsafeRawPointer = OpaquePointer
 
@@ -27,6 +45,21 @@ public typealias UnsafeMutableBufferPointer<Element> = UnsafeMutableRawPointer
 public typealias UnsafeBufferPointer<Element> = UnsafeMutableRawPointer
 public typealias UnsafeMutableRawBufferPointer = UnsafeMutableRawPointer
 public typealias UnsafeRawBufferPointer = UnsafeMutableRawPointer
+
+// TODO: static extensions on typealias don't work; we would need to make this a wrapper struct for it to work
+//public extension UnsafeMutablePointer {
+//    public static func allocate(capacity: Int) -> Memory {
+//        let mem = com.sun.jna.Memory(Int64(capacity))
+//        mem.clear()
+//        return mem
+//    }
+//}
+//
+//public extension Memory {
+//    func deallocate() {
+//        dispose() // this would happen during GC, but doing it manually frees up the memory sooner
+//    }
+//}
 
 public extension UnsafeMutableRawPointer {
     var baseAddress: OpaquePointer {
@@ -43,12 +76,6 @@ public func withUnsafeMutablePointer<T>(to pointerRef: InOut<OpaquePointer?>, bl
     return try block(pref)
 }
 
-// Kotlin compile error: Platform declaration clash: The following declarations have the same JVM signature (withUnsafeMutablePointer(Lskip/lib/InOut;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;):
-//public func withUnsafeMutablePointer<T>(to pointerRef: InOut<SkipFFIStructure>, block: (InOut<SkipFFIStructure>) throws -> T) rethrows -> T {
-//    block(pointerRef)
-//}
-
-
 /// `Swift.String.init(cString:)` can be replicated using `com.sun.jna.Pointer.getString(offset)`
 public func String(cString: OpaquePointer) -> String {
     cString.getString(0)
@@ -57,13 +84,6 @@ public func String(cString: OpaquePointer) -> String {
 public func Data(bytes: UnsafeRawPointer, count: Int) -> Data {
     return Data(platformValue: bytes.getByteArray(0, count))
 }
-
-//public func withUnsafeMutableBytes<T, Result>(of value: inout T, _ body: (Any /* UnsafeMutableRawBufferPointer */) throws -> Result) rethrows -> Result { fatalError() }
-//public func withUnsafeBytes<T, Result>(of value: inout T, _ body: (Any /* UnsafeRawBufferPointer */) throws -> Result) rethrows -> Result { fatalError() }
-//public func withUnsafeBytes<T, Result>(of value: T, _ body: (Any /* UnsafeRawBufferPointer */) throws -> Result) rethrows -> Result { fatalError() }
-//public func withUnsafeTemporaryAllocation<R>(byteCount: Int, alignment: Int, _ body: (Any /* UnsafeMutableRawBufferPointer */) throws -> R) rethrows -> R { fatalError() }
-//public func withUnsafeTemporaryAllocation<R>(of type: Any /* T.Type */, capacity: Int, _ body: (Any /* UnsafeMutableBufferPointer<T> */) throws -> R) rethrows -> R { fatalError() }
-
 
 extension Data {
     public func withUnsafeBytes<ResultType>(_ body: (UnsafeRawBufferPointer) throws -> ResultType) rethrows -> ResultType {
@@ -107,4 +127,74 @@ public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, 
     }
     #endif
     return instance
+}
+
+
+#if SKIP
+public typealias FFIDataPointer = com.sun.jna.Memory
+#else
+public typealias FFIDataPointer = UnsafeMutableRawPointer
+#endif
+
+/// Allocates the given `size` of memory and then invokes the block with the pointer, then returns the contents of the null-terminated string
+public func withFFIDataPointer(size: Int, block: (FFIDataPointer) throws -> Int32) rethrows -> Data? {
+
+    func read() throws -> Data {
+        #if SKIP
+        let dataPtr = FFIDataPointer(Int64(size))
+        dataPtr.clear()
+        defer { dataPtr.close() } // calls dispose() to deallocate
+        #else
+        let dataPtr = FFIDataPointer.allocate(byteCount: Int(size), alignment: MemoryLayout<UInt8>.alignment)
+        //defer { dataPtr.deallocate() } // we deallocate lazily from the Data
+        #endif
+
+        let read: Int32 = try block(dataPtr)
+
+        #if SKIP
+        let data: kotlin.ByteArray = dataPtr.getByteArray(0, read)
+        return Data(platformValue: data)
+        #else
+        let data = Data(bytesNoCopy: dataPtr, count: Int(read), deallocator: .custom({ (pointer, _) in
+            pointer.deallocate()
+        }))
+        return data
+        #endif
+    }
+
+    var data = try read()
+    // keep reading until read == size
+    while data.count < size {
+        data.append(contentsOf: try read())
+    }
+    return data
+}
+
+
+#if SKIP
+public typealias FFIStringPointer = com.sun.jna.Memory
+#else
+public typealias FFIStringPointer = UnsafeMutablePointer<CChar>
+#endif
+
+/// Allocates the given `size` of memory and then invokes the block with the pointer, then returns the contents of the null-terminated string
+public func withFFIStringPointer(size: Int, block: (FFIStringPointer) throws -> Void) rethrows -> String? {
+    #if SKIP
+    // TODO: to mimic UnsafeMutablePointer<CChar>.allocate() we would need to create wrapper structs in SkipFFI (rather than raw typealiases)
+    let stringMemory = FFIStringPointer(Int64(size + 1))
+    stringMemory.clear()
+    defer { stringMemory.close() } // calls dispose() to deallocate
+    #else
+    let stringMemory = FFIStringPointer.allocate(capacity: Int(size + 1))
+    defer { stringMemory.deallocate() }
+    #endif
+
+    try block(stringMemory)
+
+    #if SKIP
+    return stringMemory.getString(0)
+    #else
+    let entryName = String(cString: stringMemory)
+    return entryName
+    #endif
 }
