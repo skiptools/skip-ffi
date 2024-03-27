@@ -92,7 +92,24 @@ extension Data {
         let ptr = com.sun.jna.Native.getDirectBufferPointer(buf)
         return body(com.sun.jna.ptr.PointerByReference(ptr))
     }
+
+    public mutating func withUnsafeMutableBytes<ResultType>(_ body: (UnsafeRawBufferPointer) throws -> ResultType) rethrows -> ResultType {
+        let byteArray = self.kotlin(nocopy: true)
+        let len = self.count
+        let buf = java.nio.ByteBuffer.allocateDirect(len)
+        buf.put(byteArray)
+        //buf.flip()
+        let ptr = com.sun.jna.Native.getDirectBufferPointer(buf)
+        let ptrRef = com.sun.jna.ptr.PointerByReference(ptr)
+        let result = body(ptrRef)
+
+
+        let byteArray2 = PlatformData(len)
+        ptrRef.value.read(0, byteArray2, 0, len)
+        return result
+    }
 }
+internal typealias PlatformData = kotlin.ByteArray
 
 #endif
 
