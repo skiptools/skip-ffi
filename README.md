@@ -21,14 +21,6 @@ import Darwin
 #else
 import SkipFFI
 let Darwin = BionicDarwin()
-#endif
-
-// Full-qualified Module.fname() will call through SkipFFI to the C interface
-Darwin.abs(-12) // 12
-Darwin.free(Darwin.malloc(8))
-
-
-// MARK: Implementation of C interface
 
 func BionicDarwin() -> BionicDarwin {
     com.sun.jna.Native.load("c", (BionicDarwin.self as kotlin.reflect.KClass).java)
@@ -42,6 +34,11 @@ protocol BionicDarwin : com.sun.jna.Library {
 
     func getenv(_ key: String) -> String?
 }
+#endif
+
+// Fully-qualified Module.fname() will call through SkipFFI to the C interface
+Darwin.abs(-12) // 12
+Darwin.free(Darwin.malloc(8))
 
 ```
 
