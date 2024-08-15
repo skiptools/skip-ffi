@@ -124,6 +124,11 @@ public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, 
         // should be bundled from the C module in jni/arm64-v8a/libclibrary.so
         com.sun.jna.Native.register(clazz.java, libraryName)
     } catch let error as java.lang.UnsatisfiedLinkError {
+        if ProcessInfo.processInfo.environment["ANDROID_ROOT"] != nil {
+            // we are running on Android and not Robolectric, so just re-throw the error
+            throw error
+        }
+
         // for Robolectric we link against out locally-built library version created by either Xcode or SwiftPM
         var frameworkPath: String
         if let bundlePath = ProcessInfo.processInfo.environment["XCTestBundlePath"] { // running from Xcode
