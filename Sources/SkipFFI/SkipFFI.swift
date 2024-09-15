@@ -134,10 +134,17 @@ public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, 
         if let bundlePath = ProcessInfo.processInfo.environment["XCTestBundlePath"] { // running from Xcode
             frameworkPath = bundlePath + "/../PackageFrameworks/\(frameworkName).framework/\(frameworkName)"
         } else { // SwiftPM doesn't set XCTestBundlePath and builds as a .dylib rather than a .framework
-            let baseDir = FileManager.default.currentDirectoryPath + "/../../../../../.."
+            var baseDir = FileManager.default.currentDirectoryPath + "/../../../../../.."
             frameworkPath = baseDir + "/x86_64-apple-macosx/debug/lib\(frameworkName).dylib" // check for Intel
             if !FileManager.default.fileExists(atPath: frameworkPath) { // no x86_64 … try ARM
                 frameworkPath = baseDir + "/arm64-apple-macosx/debug/lib\(frameworkName).dylib"
+            }
+            if !FileManager.default.fileExists(atPath: frameworkPath) { // handle new Swift 6 addition of "destination" to the build plugin output hierarchy
+                baseDir += "/.."
+                frameworkPath = baseDir + "/x86_64-apple-macosx/debug/lib\(frameworkName).dylib" // check for Intel (again)
+                if !FileManager.default.fileExists(atPath: frameworkPath) { // no x86_64 … try ARM (again)
+                    frameworkPath = baseDir + "/arm64-apple-macosx/debug/lib\(frameworkName).dylib"
+                }
             }
         }
 
