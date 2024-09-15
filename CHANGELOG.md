@@ -1,3 +1,11 @@
+## 0.4.1
+
+Released 2024-09-14
+
+  - Merge pull request #1 from skiptools/swiftpm-6-plugin-destination
+  - Handle new Swift 6 plugin output folder with destination added to hierarchy when searching for local SwiftPM output frameworks
+  - Handle new Swift 6 plugin output folder with destination added to hierarchy when searching for local SwiftPM output frameworks
+
 ## 0.4.0
 
 Released 2024-08-15
