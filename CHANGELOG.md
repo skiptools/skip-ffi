@@ -1,3 +1,10 @@
+## 1.1.0
+
+Released 2024-12-31
+
+  - Merge pull request #2 from skiptools/version-bump
+  - Update JNA dependency from 5.14.0 to 5.16.0
+
 ## 1.0.0
 
 Released 2024-10-16
