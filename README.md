@@ -1,6 +1,6 @@
 # SkipFFI
 
-This is a [Skip](https://skip.tools) Swift/Kotlin library project that provides 
+This is a [Skip Lite](https://skip.tools) Swift/Kotlin library project that provides 
 the capability for Skip's Kotlin transpiled code to call into C and C++ libraries
 on Android.
 
