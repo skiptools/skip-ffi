@@ -137,7 +137,9 @@ final class SkipFFITests: XCTestCase {
         let zlibVersion = String(cString: zlib.zlibVersion())
 
         // 1.2.11 for Android and macOS 13, 1.2.12 for more recent versions
-        XCTAssertTrue(zlibVersion.hasPrefix("1.2."), "unexpected zlib version: \(zlibVersion)")
+        // Ubuntu 24.04 has zlib 1.3
+        // so just assume it is something that starts with "1."
+        XCTAssertTrue(zlibVersion.hasPrefix("1."), "unexpected zlib version: \(zlibVersion)")
     }
 
     /// Note that libxml2 isn't loadable on Android due to permissions restrictions
