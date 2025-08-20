@@ -4,25 +4,35 @@ import XCTest
 import Foundation
 
 #if !SKIP
+#if canImport(SQLite3)
 import SQLite3
+#endif
 #else
 private lazy let SQLite3 = SQLiteLibrary()
 #endif
 
 #if !SKIP
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 #else
 private lazy let Darwin = BionicDarwin()
 #endif
 
 #if !SKIP
+#if canImport(zlib)
 import zlib
+#endif
 #else
 private lazy let zlib = ZlibLibrary()
 #endif
 
 #if !SKIP
+#if canImport(libxml2)
 import libxml2
+#endif
 #else
 private lazy let libxml2 = LibXMLLibrary()
 #endif
@@ -34,12 +44,20 @@ final class SkipFFITests: XCTestCase {
         // https://java-native-access.github.io/jna/4.2.1/com/sun/jna/NativeLibrary.html#library_search_paths
         //System.setProperty("jna.debug_load", "true")
 
+        #if canImport(Glibc)
+        XCTAssertEqual(12, Glibc.abs(-12))
+        Glibc.free(Glibc.malloc(8))
+
+        XCTAssertNotNil(Glibc.getenv("PATH"), "PATH environment should be set for getenv")
+        XCTAssertNil(Glibc.getenv("PATH_DOES_NOT_EXIST"), "non-existent key should not return a value for getenv")
+        #else
         XCTAssertEqual(12, Darwin.abs(-12))
         Darwin.free(Darwin.malloc(8))
 
         XCTAssertNotNil(Darwin.getenv("PATH"), "PATH environment should be set for getenv")
         XCTAssertNil(Darwin.getenv("PATH_DOES_NOT_EXIST"), "non-existent key should not return a value for getenv")
-    }
+        #endif
+    }   
 
     func testJNAPlatform() throws {
         #if SKIP
@@ -61,6 +79,7 @@ final class SkipFFITests: XCTestCase {
         XCTAssertEqual(12, dd.abs(-12))
     }
 
+    #if SKIP || os(macOS) // i.e., not Linux
     func testSQLiteJNA() throws {
         #if SKIP
         // You may set the system property jna.debug_load=true to make JNA print the steps of its library search to the console.
@@ -129,6 +148,7 @@ final class SkipFFITests: XCTestCase {
             libxml2.xmlCheckVersion(1)
         }
     }
+    #endif
 }
 
 
@@ -144,7 +164,13 @@ final class DarwinDirect {
     // @JvmName is needed for test cases, since otherwise it is mangled to 'abs$SkipFFI_debugUnitTest'
     // SKIP INSERT: @JvmName("abs")
     // SKIP EXTERN
-    func abs(_ value: Int32) -> Int32 { Darwin.abs(value) }
+    func abs(_ value: Int32) -> Int32 { 
+        #if canImport(Glibc)
+        Glibc.abs(value)
+        #else
+        Darwin.abs(value)
+        #endif
+    }
 }
 
 
