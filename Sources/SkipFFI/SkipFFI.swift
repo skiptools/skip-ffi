@@ -125,21 +125,31 @@ public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, 
             throw error
         }
 
+        let os = System.getProperty("os.name")
+        let isLinux = os.lowercase().contains("linux")
+
+        let libext = isLinux ? "so" : "dylib"
+        let libpath = "lib\(frameworkName).\(libext)"
+
+        let arch = System.getProperty("os.arch") // amd64 => x86_64 on Linux, aarch64 => arm64 on macOS
+        let libx86 = isLinux ? "x86_64-unknown-linux-gnu" : "x86_64-apple-macosx"
+        let libarm = isLinux ? "aarch64-unknown-linux-gnu" : "arm64-apple-macosx"
+
         // for Robolectric we link against out locally-built library version created by either Xcode or SwiftPM
         var frameworkPath: String
         if let bundlePath = ProcessInfo.processInfo.environment["XCTestBundlePath"] { // running from Xcode
             frameworkPath = bundlePath + "/../PackageFrameworks/\(frameworkName).framework/\(frameworkName)"
         } else { // SwiftPM doesn't set XCTestBundlePath and builds as a .dylib rather than a .framework
             var baseDir = FileManager.default.currentDirectoryPath + "/../../../../../.."
-            frameworkPath = baseDir + "/x86_64-apple-macosx/debug/lib\(frameworkName).dylib" // check for Intel
+            frameworkPath = baseDir + "/\(libx86)/debug/\(libpath)" // check for Intel
             if !FileManager.default.fileExists(atPath: frameworkPath) { // no x86_64 … try ARM
-                frameworkPath = baseDir + "/arm64-apple-macosx/debug/lib\(frameworkName).dylib"
+                frameworkPath = baseDir + "/\(libarm)/debug/\(libpath)"
             }
             if !FileManager.default.fileExists(atPath: frameworkPath) { // handle new Swift 6 addition of "destination" to the build plugin output hierarchy
                 baseDir += "/.."
-                frameworkPath = baseDir + "/x86_64-apple-macosx/debug/lib\(frameworkName).dylib" // check for Intel (again)
+                frameworkPath = baseDir + "/\(libx86)/debug/\(libpath)" // check for Intel (again)
                 if !FileManager.default.fileExists(atPath: frameworkPath) { // no x86_64 … try ARM (again)
-                    frameworkPath = baseDir + "/arm64-apple-macosx/debug/lib\(frameworkName).dylib"
+                    frameworkPath = baseDir + "/\(libarm)/debug/\(libpath)"
                 }
             }
         }
