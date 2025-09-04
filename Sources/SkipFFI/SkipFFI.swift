@@ -213,14 +213,19 @@ public typealias FFIStringPointer = UnsafeMutablePointer<CChar>
 #endif
 
 /// Allocates the given `size` of memory and then invokes the block with the pointer, then returns the contents of the null-terminated string
-public func withFFIStringPointer(size: Int, block: (FFIStringPointer) throws -> Void) rethrows -> String? {
+public func withFFIStringPointer(size: Int, clear: Bool = true, block: (FFIStringPointer) throws -> Void) rethrows -> String? {
     #if SKIP
     // TODO: to mimic UnsafeMutablePointer<CChar>.allocate() we would need to create wrapper structs in SkipFFI (rather than raw typealiases)
     let stringMemory = FFIStringPointer(Int64(size + 1))
-    stringMemory.clear()
+    if clear {
+        stringMemory.clear()
+    }
     defer { stringMemory.close() } // calls dispose() to deallocate
     #else
     let stringMemory = FFIStringPointer.allocate(capacity: Int(size + 1))
+    if clear {
+        stringMemory.initialize(repeating: 0, count: Int(size + 1))
+    }
     defer { stringMemory.deallocate() }
     #endif
 
