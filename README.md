@@ -13,6 +13,28 @@ This capability is used by Skip frameworks like
 [SkipScript](https://source.skip.tools/skip-script) to
 provide a unified API to underlying native C APIs on both Darwin and Android.
 
+## Setup
+
+To include this framework in your project, add the following
+dependency to your `Package.swift` file:
+
+```swift
+let package = Package(
+    name: "my-package",
+    products: [
+        .library(name: "MyProduct", targets: ["MyTarget"]),
+    ],
+    dependencies: [
+        .package(url: "https://source.skip.tools/skip-ffi.git", from: "1.0.0"),
+    ],
+    targets: [
+        .target(name: "MyTarget", dependencies: [
+            .product(name: "SkipFFI", package: "skip-ffi")
+        ])
+    ]
+)
+```
+
 ## Example
 
 ```swift
