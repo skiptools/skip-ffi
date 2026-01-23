@@ -1,6 +1,6 @@
 # SkipFFI
 
-This is a [Skip Lite](https://skip.tools) Swift/Kotlin library project that provides 
+This is a [Skip Lite](https://skip.dev) Swift/Kotlin library project that provides 
 the capability for Skip's Kotlin transpiled code to call into C and C++ libraries
 on Android.
 
@@ -9,8 +9,8 @@ library to simulate Swift types like `Swift.OpaquePointer` as `com.sun.jna.Point
 and implements `Swift.withUnsafeMutablePointer` using a `com.sun.jna.ptr.PointerByReference` on the Java side.
 
 This capability is used by Skip frameworks like
-[SkipSQL](https://source.skip.tools/skip-sql) and
-[SkipScript](https://source.skip.tools/skip-script) to
+[SkipSQL](https://source.skip.dev/skip-sql) and
+[SkipScript](https://source.skip.dev/skip-script) to
 provide a unified API to underlying native C APIs on both Darwin and Android.
 
 ## Setup
@@ -25,7 +25,7 @@ let package = Package(
         .library(name: "MyProduct", targets: ["MyTarget"]),
     ],
     dependencies: [
-        .package(url: "https://source.skip.tools/skip-ffi.git", from: "1.0.0"),
+        .package(url: "https://source.skip.dev/skip-ffi.git", from: "1.0.0"),
     ],
     targets: [
         .target(name: "MyTarget", dependencies: [
@@ -111,7 +111,7 @@ Android NDK toolchain to build the embedded C library for each of Android's supp
 architectures, much in the same way as Xcode and SwiftPM handle building and linking
 C source with Swift code for various architectures.
 
-See the [Skip C Demo](http://source.skip.tools/skip-c-demo) sample project for an
+See the [Skip C Demo](http://source.skip.dev/skip-c-demo) sample project for an
 example of using C files to provide a unified API to both Swift and Kotlin.
 
 
@@ -134,7 +134,7 @@ Similarly, you can set the `ANDROID_SERIAL` environment variable in the Run Argu
 ## Building
 
 This project is a Swift Package Manager module that uses the
-[Skip](https://skip.tools) plugin to transpile Swift into Kotlin.
+[Skip](https://skip.dev) plugin to transpile Swift into Kotlin.
 
 Building the module requires that Skip be installed using 
 [Homebrew](https://brew.sh) with `brew install skiptools/skip/skip`.
@@ -159,7 +159,7 @@ The general flow for contributing to this and any other Skip package is:
 
 1. Fork this repository and enable actions from the "Actions" tab
 2. Check out your fork locally
-3. When developing alongside a Skip app, add the package to a [shared workspace](https://skip.tools/docs/contributing) to see your changes incorporated in the app
+3. When developing alongside a Skip app, add the package to a [shared workspace](https://skip.dev/docs/contributing) to see your changes incorporated in the app
 4. Push your changes to your fork and ensure the CI checks all pass in the Actions tab
 5. Add your name to the Skip [Contributor Agreement](https://github.com/skiptools/clabot-config)
 6. Open a Pull Request from your fork with a description of your changes
@@ -168,25 +168,5 @@ The general flow for contributing to this and any other Skip package is:
 
 This software is licensed under the
 [GNU Lesser General Public License v3.0](https://spdx.org/licenses/LGPL-3.0-only.html),
-with the following
-[linking exception](https://spdx.org/licenses/LGPL-3.0-linking-exception.html)
-to clarify that distribution to restricted environments (e.g., app stores)
-is permitted:
-
-> This software is licensed under the LGPL3, included below.
-> As a special exception to the GNU Lesser General Public License version 3
-> ("LGPL3"), the copyright holders of this Library give you permission to
-> convey to a third party a Combined Work that links statically or dynamically
-> to this Library without providing any Minimal Corresponding Source or
-> Minimal Application Code as set out in 4d or providing the installation
-> information set out in section 4e, provided that you comply with the other
-> provisions of LGPL3 and provided that you meet, for the Application the
-> terms and conditions of the license(s) which apply to the Application.
-> Except as stated in this special exception, the provisions of LGPL3 will
-> continue to comply in full to this Library. If you modify this Library, you
-> may apply this exception to your version of this Library, but you are not
-> obliged to do so. If you do not wish to do so, delete this exception
-> statement from your version. This exception does not (and cannot) modify any
-> license terms which apply to the Application, with which you must still
-> comply.
-
+with a [linking exception](https://spdx.org/licenses/LGPL-3.0-linking-exception.html)
+to clarify that distribution to restricted environments (e.g., app stores) is permitted.
