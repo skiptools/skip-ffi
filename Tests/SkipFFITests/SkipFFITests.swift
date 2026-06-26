@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 import XCTest
 import Foundation
+import SkipFFI
 
 #if !SKIP
 #if canImport(SQLite3)
@@ -72,6 +73,47 @@ final class SkipFFITests: XCTestCase {
             $0.baseAddress
         }
         XCTAssertNotNil(baseAddress)
+    }
+
+    /// Mutating the bytes through the pointer must be reflected back in the `Data`
+    /// on both platforms (regression test for the write-back being dropped on Android).
+    func testDataWithUnsafeMutableBytesWritesBack() throws {
+        var data = "ABC".data(using: String.Encoding.utf8)!
+        data.withUnsafeMutableBytes { rawBuffer in
+            #if SKIP
+            // write the replacement bytes into the native buffer through the pointer
+            let replacement = "XYZ".data(using: String.Encoding.utf8)!.kotlin(nocopy: true)
+            rawBuffer.baseAddress.write(0, replacement, 0, 3)
+            #else
+            rawBuffer.copyBytes(from: Array("XYZ".utf8))
+            #endif
+        }
+        XCTAssertEqual(data, "XYZ".data(using: String.Encoding.utf8)!)
+    }
+
+    /// `withFFIDataPointer` should return the bytes written into the buffer by the block.
+    func testWithFFIDataPointerFill() throws {
+        let result = withFFIDataPointer(size: 3) { ptr in
+            #if SKIP
+            let bytes = "XYZ".data(using: String.Encoding.utf8)!.kotlin(nocopy: true)
+            ptr.write(0, bytes, 0, 3)
+            #else
+            let dst = ptr.assumingMemoryBound(to: UInt8.self)
+            let src = Array("XYZ".utf8)
+            for i in 0..<3 { dst[i] = src[i] }
+            #endif
+            return Int32(3)
+        }
+        XCTAssertEqual(result, "XYZ".data(using: String.Encoding.utf8)!)
+    }
+
+    /// A block that returns a negative count (the conventional C error signal) should
+    /// yield `nil` rather than trapping or throwing an opaque array exception.
+    func testWithFFIDataPointerNegativeCountReturnsNil() throws {
+        let result = withFFIDataPointer(size: 8) { _ in
+            return Int32(-1)
+        }
+        XCTAssertNil(result)
     }
 
     func testDarwinDirectMappingJNA() throws {

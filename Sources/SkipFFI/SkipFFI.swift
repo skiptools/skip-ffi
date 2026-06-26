@@ -10,6 +10,18 @@ public protocol SkipFFIStructure {
 }
 #endif
 
+#if SKIP
+/// A C function pointer (callback). On Android this is a JNA `com.sun.jna.Callback`,
+/// which can be implemented with an `invoke` function whose signature matches the C
+/// callback's parameters and return type.
+public typealias FFICallback = com.sun.jna.Callback
+#else
+/// A C function pointer (callback). On Darwin a callback is typically expressed as a
+/// `@convention(c)` closure passed directly; this alias exists so that the same
+/// declaration site compiles against the transpiled JNA `com.sun.jna.Callback`.
+public typealias FFICallback = AnyObject
+#endif
+
 // MARK: UInt handling
 
 #if !SKIP
@@ -89,19 +101,22 @@ extension Data {
         return body(com.sun.jna.ptr.PointerByReference(ptr))
     }
 
-    public mutating func withUnsafeMutableBytes<ResultType>(_ body: (UnsafeRawBufferPointer) throws -> ResultType) rethrows -> ResultType {
+    public mutating func withUnsafeMutableBytes<ResultType>(_ body: (UnsafeMutableRawBufferPointer) throws -> ResultType) rethrows -> ResultType {
         let byteArray = self.kotlin(nocopy: true)
         let len = self.count
         let buf = java.nio.ByteBuffer.allocateDirect(len)
         buf.put(byteArray)
-        //buf.flip()
         let ptr = com.sun.jna.Native.getDirectBufferPointer(buf)
         let ptrRef = com.sun.jna.ptr.PointerByReference(ptr)
         let result = body(ptrRef)
 
-
-        let byteArray2 = PlatformData(len)
-        ptrRef.value.read(0, byteArray2, 0, len)
+        // Copy any mutations the body made through the pointer back into self's
+        // backing storage, so this matches Foundation's in-place mutation semantics
+        // (without this write-back the mutation is silently lost on Android).
+        // Reading through `buf` — which aliases the same native memory as `ptr` —
+        // also keeps the direct buffer reachable for the duration of the body call.
+        buf.rewind()
+        buf.get(byteArray)
         return result
     }
 }
@@ -174,33 +189,47 @@ public typealias FFIDataPointer = UnsafeMutableRawPointer
 /// Allocates the given `size` of memory and then invokes the block with the pointer, then returns the contents of the null-terminated string
 public func withFFIDataPointer(size: Int, block: (FFIDataPointer) throws -> Int32) rethrows -> Data? {
 
-    func read() throws -> Data {
+    func read(_ capacity: Int) throws -> Data? {
         #if SKIP
-        let dataPtr = FFIDataPointer(Int64(size))
+        let dataPtr = FFIDataPointer(Int64(capacity))
         dataPtr.clear()
         defer { dataPtr.close() } // calls dispose() to deallocate
         #else
-        let dataPtr = FFIDataPointer.allocate(byteCount: Int(size), alignment: MemoryLayout<UInt8>.alignment)
+        let dataPtr = FFIDataPointer.allocate(byteCount: Int(capacity), alignment: MemoryLayout<UInt8>.alignment)
         //defer { dataPtr.deallocate() } // we deallocate lazily from the Data
         #endif
 
         let read: Int32 = try block(dataPtr)
 
+        // a negative count is the conventional C error signal; surface it as nil
+        // rather than letting it trap (Darwin) or throw an opaque array exception (JNA)
+        if read < 0 {
+            #if !SKIP
+            dataPtr.deallocate()
+            #endif
+            return nil
+        }
+
+        // never read back more than the buffer we actually allocated
+        let count = min(Int(read), capacity)
+
         #if SKIP
-        let data: kotlin.ByteArray = dataPtr.getByteArray(0, read)
+        let data: kotlin.ByteArray = dataPtr.getByteArray(0, Int32(count))
         return Data(platformValue: data)
         #else
-        let data = Data(bytesNoCopy: dataPtr, count: Int(read), deallocator: .custom({ (pointer, _) in
+        let data = Data(bytesNoCopy: dataPtr, count: count, deallocator: .custom({ (pointer, _) in
             pointer.deallocate()
         }))
         return data
         #endif
     }
 
-    var data = try read()
-    // keep reading until read == size
+    guard let first = try read(size) else { return nil }
+    var data = first
+    // keep reading the remaining bytes until we have the full requested size
     while data.count < size {
-        data.append(contentsOf: try read())
+        guard let more = try read(size - data.count), more.count > 0 else { break }
+        data.append(contentsOf: more)
     }
     return data
 }
