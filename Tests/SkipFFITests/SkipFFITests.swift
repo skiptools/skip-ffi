@@ -116,6 +116,70 @@ final class SkipFFITests: XCTestCase {
         XCTAssertNil(result)
     }
 
+    /// Reading the bytes back through `baseAddress` must yield the original contents
+    /// (the existing `testDataWithUnsafeBytes` only checks that the pointer is non-nil).
+    func testDataWithUnsafeBytesReadsContents() throws {
+        let data = "ABC".data(using: String.Encoding.utf8)!
+        let readBack: Data = data.withUnsafeBytes { raw in
+            #if SKIP
+            return Data(platformValue: raw.baseAddress.getByteArray(0, 3))
+            #else
+            return Data(bytes: raw.baseAddress!, count: 3)
+            #endif
+        }
+        XCTAssertEqual(readBack, data)
+    }
+
+    /// `withFFIStringPointer` should return the NUL-terminated string written by the block.
+    /// With the default `clear: true` the buffer is zeroed first, so writing the bytes
+    /// without an explicit terminator still yields the correct string.
+    func testWithFFIStringPointer() throws {
+        let result = withFFIStringPointer(size: 5) { ptr in
+            #if SKIP
+            let bytes = "HELLO".data(using: String.Encoding.utf8)!.kotlin(nocopy: true)
+            ptr.write(0, bytes, 0, 5)
+            #else
+            let src = Array("HELLO".utf8)
+            for i in 0..<5 { ptr[i] = CChar(bitPattern: src[i]) }
+            #endif
+        }
+        XCTAssertEqual(result, "HELLO")
+    }
+
+    /// With `clear: false` the block is responsible for the NUL terminator; the returned
+    /// string must still stop at it.
+    func testWithFFIStringPointerNoClear() throws {
+        let result = withFFIStringPointer(size: 5, clear: false) { ptr in
+            #if SKIP
+            // write "HELLO" followed by an explicit NUL terminator (6 bytes)
+            let bytes = kotlin.ByteArray(6)
+            let hello = "HELLO".data(using: String.Encoding.utf8)!.kotlin(nocopy: true)
+            for i in 0..<5 { bytes[i] = hello[i] }
+            ptr.write(0, bytes, 0, 6)
+            #else
+            let src = Array("HELLO".utf8)
+            for i in 0..<5 { ptr[i] = CChar(bitPattern: src[i]) }
+            ptr[5] = CChar(0)
+            #endif
+        }
+        XCTAssertEqual(result, "HELLO")
+    }
+
+    /// When the block fills fewer than `size` bytes per call, `withFFIDataPointer` must
+    /// keep reading the remaining bytes until the full size is assembled. Here each call
+    /// writes a single byte, so reaching `size` requires multiple reads.
+    func testWithFFIDataPointerMultiRead() throws {
+        let result = withFFIDataPointer(size: 3) { ptr in
+            #if SKIP
+            ptr.setByte(0, Int8(65)) // 'A'
+            #else
+            ptr.assumingMemoryBound(to: UInt8.self)[0] = UInt8(65) // 'A'
+            #endif
+            return Int32(1)
+        }
+        XCTAssertEqual(result, "AAA".data(using: String.Encoding.utf8)!)
+    }
+
     func testDarwinDirectMappingJNA() throws {
         let dd = DarwinDirect()
         XCTAssertEqual(12, dd.abs(-12))
