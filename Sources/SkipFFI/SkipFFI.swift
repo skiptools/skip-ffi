@@ -150,10 +150,13 @@ public func registerNatives<T: AnyObject>(_ instance: T, frameworkName: String, 
         let libx86 = isLinux ? "x86_64-unknown-linux-gnu" : "x86_64-apple-macosx"
         let libarm = isLinux ? "aarch64-unknown-linux-gnu" : "arm64-apple-macosx"
 
-        // for Robolectric we link against out locally-built library version created by either Xcode or SwiftPM
+        // for Robolectric we link against our locally-built library version created by either Xcode or SwiftPM
         var frameworkPath: String
-        if let bundlePath = ProcessInfo.processInfo.environment["XCTestBundlePath"] { // running from Xcode
-            frameworkPath = bundlePath + "/../PackageFrameworks/\(frameworkName).framework/\(frameworkName)"
+        if let ffiLibraryPath = ProcessInfo.processInfo.environment["SKIP_FFI_LIBRARY_PATH"] {
+            frameworkPath = ffiLibraryPath + "/\(libpath)"
+        } else if let bundlePath = ProcessInfo.processInfo.environment["XCTestBundlePath"] { // running from Xcode
+            let absoluteBundlePath = bundlePath.hasPrefix("/") ? bundlePath : "/" + bundlePath
+            frameworkPath = absoluteBundlePath + "/../PackageFrameworks/\(frameworkName).framework/\(frameworkName)"
         } else { // SwiftPM doesn't set XCTestBundlePath and builds as a .dylib rather than a .framework
             var baseDir = FileManager.default.currentDirectoryPath + "/../../../../../.."
             frameworkPath = baseDir + "/\(libx86)/debug/\(libpath)" // check for Intel
